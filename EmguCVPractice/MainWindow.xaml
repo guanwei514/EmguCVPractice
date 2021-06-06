@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         xmlns:ui="clr-namespace:Emgu.CV.UI;assembly=Emgu.CV.Platform.NetFramework"
+        xmlns:Converter="clr-namespace:EmguCVPractice.Converter"
         xmlns:WinFormHost="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
         xmlns:local="clr-namespace:EmguCVPractice"
         mc:Ignorable="d"
@@ -17,26 +18,67 @@
             <i:InvokeCommandAction Command="{Binding ViewLoaded}"></i:InvokeCommandAction>
         </i:EventTrigger>
     </i:Interaction.Triggers>
+    <Window.Resources>
+        <Converter:ArrayMultiValueConverter x:Key="ArrayMultiValueConverter"></Converter:ArrayMultiValueConverter>
+    </Window.Resources>
     <Grid>
-        <Border HorizontalAlignment="Left" VerticalAlignment="Top" Width="500" Height="400" Margin="5,5,0,0" BorderThickness="1" BorderBrush="DarkGray">
-            <!--<WindowsFormsHost x:Name="WindowsFormsHost1">
-                <ui:ImageBox x:Name="MyImageBox" FunctionalMode="Everything"/>
-            </WindowsFormsHost>-->
-            <Image Source="{Binding MyImage}" Stretch="Uniform"></Image>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Menu x:Name="myMenuStrip" VerticalAlignment="Top" Grid.Row="0">
+            <MenuItem Header="File" Padding="20,5,20,5">
+                <MenuItem Header="Open" Command="{Binding OpenImageMenuItemClick}">
+                    <MenuItem.CommandParameter>
+                        <MultiBinding Converter="{StaticResource ArrayMultiValueConverter}">
+                            <Binding ElementName="MyImageBox"></Binding>
+                            <Binding ElementName="MyHistogramBox"></Binding>
+                        </MultiBinding>
+                    </MenuItem.CommandParameter>
+                </MenuItem>
+            </MenuItem>
+        </Menu>
+        <Border Grid.Row="1" Margin="5,5,5,5" CornerRadius="5" Background="WhiteSmoke">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="250"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
+                </Grid.RowDefinitions>
+                <!--<Image Grid.Column="0" Grid.Row="0" Source="{Binding MyImage}" Stretch="Uniform" Margin="5,5,5,5"></Image>-->
+                <WindowsFormsHost x:Name="WindowsFormsHost1" Grid.Column="0" Grid.Row="0">
+                    <!--Everything means it provide all function which can be call by MouseRightDown-->
+                    <!--PanAndZoom means it provide only move and zoom function-->
+                    <ui:ImageBox x:Name="MyImageBox" FunctionalMode="PanAndZoom"></ui:ImageBox>
+                </WindowsFormsHost>
+                <WindowsFormsHost x:Name="WindowsFormsHost2" Grid.Column="0" Grid.Row="1">
+                    <ui:HistogramBox x:Name="MyHistogramBox" FunctionalMode="PanAndZoom"></ui:HistogramBox>
+                </WindowsFormsHost>
+                <Button x:Name="ToOriginImgButton" Grid.Column="1" Grid.RowSpan="2" Width="100" Height="30" Content="原圖" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,10,125,0">
+                    <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="Click">
+                            <i:InvokeCommandAction Command="{Binding ToOriginImgButtonClick}"></i:InvokeCommandAction>
+                        </i:EventTrigger>
+                    </i:Interaction.Triggers>
+                </Button>
+                <Button x:Name="ToGrayScaleImgButton" Grid.Column="1" Grid.RowSpan="2" Width="100" Height="30" Content="灰階" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,10,20,0">
+                    <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="Click">
+                            <i:InvokeCommandAction Command="{Binding ToGrayScaleImgButtonClick}"></i:InvokeCommandAction>
+                        </i:EventTrigger>
+                    </i:Interaction.Triggers>
+                </Button>
+                <Button x:Name="ShowImgHistogramButton" Grid.Column="1" Grid.RowSpan="2" Width="100" Height="30" Content="顯示亮度分布" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,60,20,0">
+                    <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="Click">
+                            <i:InvokeCommandAction Command="{Binding ShowImgHistogramButtonClick}"></i:InvokeCommandAction>
+                        </i:EventTrigger>
+                    </i:Interaction.Triggers>
+                </Button>
+            </Grid>
         </Border>
-        <Button x:Name="ToOriginImgButton" Width="100" Height="30" Content="原圖" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="525,10,0,0">
-            <i:Interaction.Triggers>
-                <i:EventTrigger EventName="Click">
-                    <i:InvokeCommandAction Command="{Binding ToOriginImgButtonClick}"></i:InvokeCommandAction>
-                </i:EventTrigger>
-            </i:Interaction.Triggers>
-        </Button>
-        <Button x:Name="ToGrayScaleImgButton" Width="100" Height="30" Content="灰階" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="645,10,0,0">
-            <i:Interaction.Triggers>
-                <i:EventTrigger EventName="Click">
-                    <i:InvokeCommandAction Command="{Binding ToGrayScaleImgButtonClick}"></i:InvokeCommandAction>
-                </i:EventTrigger>
-            </i:Interaction.Triggers>
-        </Button>
     </Grid>
 </Window>

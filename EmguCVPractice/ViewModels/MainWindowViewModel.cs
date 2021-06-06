@@ -1,24 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Input;
-using EmguCVPractice.Extensions;
-using Emgu.CV;
+﻿using Emgu.CV;
 using Emgu.CV.CvEnum;
-using Emgu.CV.UI;
 using Emgu.CV.Structure;
-using System.Windows.Media.Imaging;
-using System.Runtime.InteropServices;
-using System.Windows.Media;
+using Emgu.CV.UI;
+using EmguCVPractice.Extensions;
+using System;
 using System.Drawing;
-using System.Windows.Interop;
-using System.Windows;
+using System.Windows.Forms;
+using System.Windows.Input;
 
 namespace EmguCVPractice.ViewModels
 {
-    public class MainWindowViewModel: ViewModelBase, IDisposable
+    public class MainWindowViewModel : ViewModelBase, IDisposable
     {
         /// <summary>
         /// 要使用EmguCV的功能，大多都要先透過CvInvoke去做。
@@ -59,44 +51,95 @@ namespace EmguCVPractice.ViewModels
         }
         #endregion
         #region Properties
-        private string serverDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "..\\..\\Images\\"));
-        private ImageSource _MyImage = null;
-        public ImageSource MyImage { get { return _MyImage; } set { _MyImage = value; NotifyPropertyChanged(); } }
+        private string ImageFolderDirectory = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "..\\..\\Images\\"));
+        private Mat LoadedImage = new Mat();
+        private ImageBox _MyImage = null;
+        public ImageBox MyImage { get { return _MyImage; } set { _MyImage = value; NotifyPropertyChanged(); } }
+        private HistogramBox _MyHistogram = null;
+        public HistogramBox MyHistogram { get { return _MyHistogram; } set { _MyHistogram = value; NotifyPropertyChanged(); } }
         #endregion
         #region ToOriginImgButtonClick
         public ICommand ToOriginImgButtonClick { get { return new RelayCommand(param => ToOriginImgButtonClickExecute(), param => true); } }
         private void ToOriginImgButtonClickExecute()
         {
-            Mat OriginalImg = CvInvoke.Imread(serverDir + "lena.jpg");
-            MyImage = ImageSourceFromBitmap(OriginalImg.ToImage<Bgr, byte>().ToBitmap());
+            if (!LoadedImage.IsEmpty)
+            {
+                MyImage.Image = LoadedImage;
+            }
+            else
+            {
+                System.Windows.Forms.MessageBox.Show("Image isn't loaded yet.");
+            }
         }
         #endregion
         #region ToGrayScaleImgButtonClick
         public ICommand ToGrayScaleImgButtonClick { get { return new RelayCommand(param => ToGrayScaleImgButtonClickExecute(), param => true); } }
         private void ToGrayScaleImgButtonClickExecute()
         {
-            Mat OriginalImg = CvInvoke.Imread(serverDir + "lena.jpg");
-            Mat grayImg = new Mat();
-            CvInvoke.CvtColor(OriginalImg, grayImg, ColorConversion.Rgb2Gray);
-            //CvInvoke.Imshow("GrayImg", grayImg);
-            MyImage = ImageSourceFromBitmap(grayImg.ToImage<Bgr, byte>().ToBitmap());
+            if (!LoadedImage.IsEmpty)
+            {
+                Mat grayImg = new Mat();
+                CvInvoke.CvtColor(LoadedImage, grayImg, ColorConversion.Rgb2Gray);
+                //CvInvoke.Imshow("GrayImg", grayImg);
+                MyImage.Image = grayImg;
+            }
+            else
+            {
+                System.Windows.Forms.MessageBox.Show("Image isn't loaded yet.");
+            }
+
         }
         #endregion
-
-        #region Methods
-        //If you get 'dllimport unknown'-, then add 'using System.Runtime.InteropServices;'
-        [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool DeleteObject([In] IntPtr hObject);
-
-        public ImageSource ImageSourceFromBitmap(Bitmap bmp)
+        #region OpenImageMenuItemClick
+        public ICommand OpenImageMenuItemClick { get { return new RelayCommand(param => OpenImageMenuItemClickExecute(param), param => CanOpenImageMenuItemClickExecute(param)); } }
+        private void OpenImageMenuItemClickExecute(object param)
         {
-            var handle = bmp.GetHbitmap();
-            try
+            if (!CanOpenImageMenuItemClickExecute(param))
             {
-                return Imaging.CreateBitmapSourceFromHBitmap(handle, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                return;
             }
-            finally { DeleteObject(handle); }
+            var parameters = (object[])param;
+            MyImage = (ImageBox)parameters[0];
+            MyHistogram = (HistogramBox)parameters[1];
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.InitialDirectory = ImageFolderDirectory;
+            ofd.Filter = "jpg files (*.jpg)|*.jpg";
+            ofd.RestoreDirectory = true;
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                LoadedImage = CvInvoke.Imread(ofd.FileName);
+                MyImage.Image = LoadedImage;
+            }
+        }
+        private bool CanOpenImageMenuItemClickExecute(object param)
+        {
+            if (param is object[] parameters)
+            {
+                if (!(parameters[0] is ImageBox))
+                {
+                    return false;
+                }
+
+                if (!(parameters[1] is HistogramBox))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        #endregion
+        #region ShowImgHistogramButtonClick
+        public ICommand ShowImgHistogramButtonClick { get { return new RelayCommand(param => ShowImgHistogramButtonClickExecute(), param => true); } }
+        private void ShowImgHistogramButtonClickExecute()
+        {
+            Image<Bgr,byte> image = LoadedImage.ToImage<Bgr, byte>();
+            DenseHistogram hist = new DenseHistogram(256, new RangeF(0, 255));
+            hist.Calculate(new Image<Gray, byte>[] { image[0]}, false, null);
+
+            Mat m = new Mat();
+            hist.CopyTo(m);
+            MyHistogram.GenerateHistogram("Blue channel Histogram", Color.Blue, m, 256, new float[] { 0, 256 });
+            MyHistogram.Refresh();
         }
         #endregion
     }
