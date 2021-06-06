@@ -20,6 +20,23 @@ namespace EmguCVPractice.ViewModels
 {
     public class MainWindowViewModel: ViewModelBase, IDisposable
     {
+        /// <summary>
+        /// 要使用EmguCV的功能，大多都要先透過CvInvoke去做。
+        /// Imread: Image Read
+        /// Imwrite: Image Write
+        /// Imshow: Image Show,跳出一個視窗顯示這張圖片
+        /// 
+        /// Image方法範例:           Image<Bgr, Byte> img = new Image<Bgr, byte>(320, 240, new Bgr(255, 0, 0));
+        /// 
+        /// Mat方法範例:             Mat img = new Mat(200, 400, DepthType.Cv8U, 3);
+        ///                         img.SetTo(new Bgr(255, 0, 0).MCvScalar);
+        ///             
+        /// cvCreateImage方法範例: 
+        ///                         IntPtr img = CvInvoke.cvCreateImage(CvInvoke.cvGetSize(scr),
+        ///                         Emgu.CV.CvEnum.IPL_DEPTH.IPL_DEPTH_8U, 1);
+        ///                         CvInvoke.cvCopy(scr, img, IntPtr.Zero);
+        ///                         ImageBox.Image = img;
+        /// </summary>
         public MainWindowViewModel()
         {
 
@@ -28,24 +45,7 @@ namespace EmguCVPractice.ViewModels
         public ICommand ViewLoaded { get { return new RelayCommand(param => ViewLoadedExecute(), param => CanViewLoadedExectue()); } }
         private void ViewLoadedExecute()
         {
-            //要使用EmguCV的功能，大多都要先透過CvInvoke去做。
-            //Imread:Image Read
-            //Imwrite: Image Write
-            //Imshow: Image Show,跳出一個視窗顯示這張圖片
-            ////Image方法
-            //Image<Bgr, Byte> img = new Image<Bgr, byte>(320, 240, new Bgr(255, 0, 0));
-            ////Mat方法 
-            //Mat img = new Mat(200, 400, DepthType.Cv8U, 3);
-            //img.SetTo(new Bgr(255, 0, 0).MCvScalar);
-            ////cvCreateImage方法
-            //IntPtr img = CvInvoke.cvCreateImage(CvInvoke.cvGetSize(scr),
-            //Emgu.CV.CvEnum.IPL_DEPTH.IPL_DEPTH_8U, 1);
-            //CvInvoke.cvCopy(scr, img, IntPtr.Zero);
-            //ImageBox.Image = img;
 
-            string serverDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "..\\..\\Images\\"));
-            _Img = CvInvoke.Imread(serverDir +"lena.jpg");
-            MyImage = ImageSourceFromBitmap(_Img.ToImage<Bgr, byte>().ToBitmap());
         }
         private bool CanViewLoadedExectue()
         {
@@ -59,17 +59,27 @@ namespace EmguCVPractice.ViewModels
         }
         #endregion
         #region Properties
-        private Mat _Img = new Mat();
+        private string serverDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "..\\..\\Images\\"));
         private ImageSource _MyImage = null;
         public ImageSource MyImage { get { return _MyImage; } set { _MyImage = value; NotifyPropertyChanged(); } }
         #endregion
-        #region ToGrayScaleButtonClick
-        public ICommand ToGrayScaleButtonClick { get { return new RelayCommand(param => ToGrayScaleButtonClickExecute(), param => true); } }
-        private void ToGrayScaleButtonClickExecute()
+        #region ToOriginImgButtonClick
+        public ICommand ToOriginImgButtonClick { get { return new RelayCommand(param => ToOriginImgButtonClickExecute(), param => true); } }
+        private void ToOriginImgButtonClickExecute()
         {
+            Mat OriginalImg = CvInvoke.Imread(serverDir + "lena.jpg");
+            MyImage = ImageSourceFromBitmap(OriginalImg.ToImage<Bgr, byte>().ToBitmap());
+        }
+        #endregion
+        #region ToGrayScaleImgButtonClick
+        public ICommand ToGrayScaleImgButtonClick { get { return new RelayCommand(param => ToGrayScaleImgButtonClickExecute(), param => true); } }
+        private void ToGrayScaleImgButtonClickExecute()
+        {
+            Mat OriginalImg = CvInvoke.Imread(serverDir + "lena.jpg");
             Mat grayImg = new Mat();
-            CvInvoke.CvtColor(_Img, grayImg, ColorConversion.Rgb2Gray);
-            CvInvoke.Imshow("GrayImg", grayImg);
+            CvInvoke.CvtColor(OriginalImg, grayImg, ColorConversion.Rgb2Gray);
+            //CvInvoke.Imshow("GrayImg", grayImg);
+            MyImage = ImageSourceFromBitmap(grayImg.ToImage<Bgr, byte>().ToBitmap());
         }
         #endregion
 
