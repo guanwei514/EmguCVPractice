@@ -15,6 +15,7 @@ using System.Windows.Media;
 using System.Drawing;
 using System.Windows.Interop;
 using System.Windows;
+using System.Windows.Forms;
 
 namespace EmguCVPractice.ViewModels
 {
@@ -59,7 +60,8 @@ namespace EmguCVPractice.ViewModels
         }
         #endregion
         #region Properties
-        private string serverDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "..\\..\\Images\\"));
+        private string ImageFolderDirectory = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "..\\..\\Images\\"));
+        private Mat LoadedImage = new Mat();
         private ImageSource _MyImage = null;
         public ImageSource MyImage { get { return _MyImage; } set { _MyImage = value; NotifyPropertyChanged(); } }
         #endregion
@@ -67,36 +69,47 @@ namespace EmguCVPractice.ViewModels
         public ICommand ToOriginImgButtonClick { get { return new RelayCommand(param => ToOriginImgButtonClickExecute(), param => true); } }
         private void ToOriginImgButtonClickExecute()
         {
-            Mat OriginalImg = CvInvoke.Imread(serverDir + "lena.jpg");
-            MyImage = ImageSourceFromBitmap(OriginalImg.ToImage<Bgr, byte>().ToBitmap());
+            if (!LoadedImage.IsEmpty)
+            {
+                MyImage = ImageHelper.ImageSourceFromBitmap(LoadedImage.ToImage<Bgr, byte>().ToBitmap());
+            }
+            else
+            {
+                System.Windows.Forms.MessageBox.Show("Image isn't loaded yet.");
+            }
         }
         #endregion
         #region ToGrayScaleImgButtonClick
         public ICommand ToGrayScaleImgButtonClick { get { return new RelayCommand(param => ToGrayScaleImgButtonClickExecute(), param => true); } }
         private void ToGrayScaleImgButtonClickExecute()
         {
-            Mat OriginalImg = CvInvoke.Imread(serverDir + "lena.jpg");
-            Mat grayImg = new Mat();
-            CvInvoke.CvtColor(OriginalImg, grayImg, ColorConversion.Rgb2Gray);
-            //CvInvoke.Imshow("GrayImg", grayImg);
-            MyImage = ImageSourceFromBitmap(grayImg.ToImage<Bgr, byte>().ToBitmap());
+            if (!LoadedImage.IsEmpty)
+            {
+                Mat grayImg = new Mat();
+                CvInvoke.CvtColor(LoadedImage, grayImg, ColorConversion.Rgb2Gray);
+                //CvInvoke.Imshow("GrayImg", grayImg);
+                MyImage = ImageHelper.ImageSourceFromBitmap(grayImg.ToImage<Bgr, byte>().ToBitmap());
+            }
+            else
+            {
+                System.Windows.Forms.MessageBox.Show("Image isn't loaded yet.");
+            }
+
         }
         #endregion
-
-        #region Methods
-        //If you get 'dllimport unknown'-, then add 'using System.Runtime.InteropServices;'
-        [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool DeleteObject([In] IntPtr hObject);
-
-        public ImageSource ImageSourceFromBitmap(Bitmap bmp)
+        #region OpenImageMenuItemClick
+        public ICommand OpenImageMenuItemClick { get { return new RelayCommand(param => OpenImageMenuItemClickExecute(), param => true); } }
+        private void OpenImageMenuItemClickExecute()
         {
-            var handle = bmp.GetHbitmap();
-            try
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.InitialDirectory = ImageFolderDirectory;
+            ofd.Filter = "jpg files (*.jpg)|*.jpg";
+            ofd.RestoreDirectory = true;
+            if (ofd.ShowDialog() == DialogResult.OK)
             {
-                return Imaging.CreateBitmapSourceFromHBitmap(handle, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                LoadedImage = CvInvoke.Imread(ofd.FileName);
+                MyImage = ImageHelper.ImageSourceFromBitmap(LoadedImage.ToImage<Bgr, byte>().ToBitmap());
             }
-            finally { DeleteObject(handle); }
         }
         #endregion
     }
