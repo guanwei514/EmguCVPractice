@@ -24,10 +24,17 @@
             </WindowsFormsHost>-->
             <Image Source="{Binding MyImage}" Stretch="Uniform"></Image>
         </Border>
-        <Button x:Name="ToGrayScaleButton" Width="100" Height="30" Content="灰階" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="525,10,0,0">
+        <Button x:Name="ToOriginImgButton" Width="100" Height="30" Content="原圖" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="525,10,0,0">
             <i:Interaction.Triggers>
                 <i:EventTrigger EventName="Click">
-                    <i:InvokeCommandAction Command="{Binding ToGrayScaleButtonClick}"></i:InvokeCommandAction>
+                    <i:InvokeCommandAction Command="{Binding ToOriginImgButtonClick}"></i:InvokeCommandAction>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+        </Button>
+        <Button x:Name="ToGrayScaleImgButton" Width="100" Height="30" Content="灰階" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="645,10,0,0">
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="Click">
+                    <i:InvokeCommandAction Command="{Binding ToGrayScaleImgButtonClick}"></i:InvokeCommandAction>
                 </i:EventTrigger>
             </i:Interaction.Triggers>
         </Button>
