@@ -1,25 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Input;
-using EmguCVPractice.Extensions;
-using Emgu.CV;
+﻿using Emgu.CV;
 using Emgu.CV.CvEnum;
-using Emgu.CV.UI;
 using Emgu.CV.Structure;
-using System.Windows.Media.Imaging;
-using System.Runtime.InteropServices;
-using System.Windows.Media;
+using Emgu.CV.UI;
+using EmguCVPractice.Extensions;
+using System;
 using System.Drawing;
-using System.Windows.Interop;
-using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Input;
 
 namespace EmguCVPractice.ViewModels
 {
-    public class MainWindowViewModel: ViewModelBase, IDisposable
+    public class MainWindowViewModel : ViewModelBase, IDisposable
     {
         /// <summary>
         /// 要使用EmguCV的功能，大多都要先透過CvInvoke去做。
@@ -62,8 +53,10 @@ namespace EmguCVPractice.ViewModels
         #region Properties
         private string ImageFolderDirectory = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "..\\..\\Images\\"));
         private Mat LoadedImage = new Mat();
-        private ImageSource _MyImage = null;
-        public ImageSource MyImage { get { return _MyImage; } set { _MyImage = value; NotifyPropertyChanged(); } }
+        private ImageBox _MyImage = null;
+        public ImageBox MyImage { get { return _MyImage; } set { _MyImage = value; NotifyPropertyChanged(); } }
+        private HistogramBox _MyHistogram = null;
+        public HistogramBox MyHistogram { get { return _MyHistogram; } set { _MyHistogram = value; NotifyPropertyChanged(); } }
         #endregion
         #region ToOriginImgButtonClick
         public ICommand ToOriginImgButtonClick { get { return new RelayCommand(param => ToOriginImgButtonClickExecute(), param => true); } }
@@ -71,7 +64,7 @@ namespace EmguCVPractice.ViewModels
         {
             if (!LoadedImage.IsEmpty)
             {
-                MyImage = ImageHelper.ImageSourceFromBitmap(LoadedImage.ToImage<Bgr, byte>().ToBitmap());
+                MyImage.Image = LoadedImage;
             }
             else
             {
@@ -88,7 +81,7 @@ namespace EmguCVPractice.ViewModels
                 Mat grayImg = new Mat();
                 CvInvoke.CvtColor(LoadedImage, grayImg, ColorConversion.Rgb2Gray);
                 //CvInvoke.Imshow("GrayImg", grayImg);
-                MyImage = ImageHelper.ImageSourceFromBitmap(grayImg.ToImage<Bgr, byte>().ToBitmap());
+                MyImage.Image = grayImg;
             }
             else
             {
@@ -98,9 +91,16 @@ namespace EmguCVPractice.ViewModels
         }
         #endregion
         #region OpenImageMenuItemClick
-        public ICommand OpenImageMenuItemClick { get { return new RelayCommand(param => OpenImageMenuItemClickExecute(), param => true); } }
-        private void OpenImageMenuItemClickExecute()
+        public ICommand OpenImageMenuItemClick { get { return new RelayCommand(param => OpenImageMenuItemClickExecute(param), param => CanOpenImageMenuItemClickExecute(param)); } }
+        private void OpenImageMenuItemClickExecute(object param)
         {
+            if (!CanOpenImageMenuItemClickExecute(param))
+            {
+                return;
+            }
+            var parameters = (object[])param;
+            MyImage = (ImageBox)parameters[0];
+            MyHistogram = (HistogramBox)parameters[1];
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.InitialDirectory = ImageFolderDirectory;
             ofd.Filter = "jpg files (*.jpg)|*.jpg";
@@ -108,8 +108,38 @@ namespace EmguCVPractice.ViewModels
             if (ofd.ShowDialog() == DialogResult.OK)
             {
                 LoadedImage = CvInvoke.Imread(ofd.FileName);
-                MyImage = ImageHelper.ImageSourceFromBitmap(LoadedImage.ToImage<Bgr, byte>().ToBitmap());
+                MyImage.Image = LoadedImage;
             }
+        }
+        private bool CanOpenImageMenuItemClickExecute(object param)
+        {
+            if (param is object[] parameters)
+            {
+                if (!(parameters[0] is ImageBox))
+                {
+                    return false;
+                }
+
+                if (!(parameters[1] is HistogramBox))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        #endregion
+        #region ShowImgHistogramButtonClick
+        public ICommand ShowImgHistogramButtonClick { get { return new RelayCommand(param => ShowImgHistogramButtonClickExecute(), param => true); } }
+        private void ShowImgHistogramButtonClickExecute()
+        {
+            Image<Bgr,byte> image = LoadedImage.ToImage<Bgr, byte>();
+            DenseHistogram hist = new DenseHistogram(256, new RangeF(0, 255));
+            hist.Calculate(new Image<Gray, byte>[] { image[0]}, false, null);
+
+            Mat m = new Mat();
+            hist.CopyTo(m);
+            MyHistogram.GenerateHistogram("Blue channel Histogram", Color.Blue, m, 256, new float[] { 0, 256 });
+            MyHistogram.Refresh();
         }
         #endregion
     }
